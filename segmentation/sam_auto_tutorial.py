@@ -91,8 +91,12 @@ def run_model(device, show_original, data, filter_method, show_bboxes, show_mask
     if(filter_method=='stable'):
         stability_filter = 0.97
         filtered_stable_masks = filter(lambda mask : mask['stability_score'] > stability_filter, masks)
+        cropped_stable_output = np.array([
+            tf.image.resize_with_crop_or_pad(box, 224, 224) for box in stable_boxes])
         stable_boxes = [get_bounding_box(mask) for mask in filtered_stable_masks]
         np.savez_compressed('cropped_stable_output', cropped_stable_output)
+
+            
 
     elif(filter_method=='big'):
         big_filter = 30000
@@ -100,7 +104,7 @@ def run_model(device, show_original, data, filter_method, show_bboxes, show_mask
         big_boxes = [get_bounding_box(mask) for mask in filtered_big_masks]
 
         cropped_big_output = np.array([
-        tf.image.resize_with_crop_or_pad(box, 224, 224) for box in big_boxes])
+            tf.image.resize_with_crop_or_pad(box, 224, 224) for box in big_boxes])
         np.savez_compressed('cropped_big_output', cropped_big_output)
 
     else:
@@ -108,8 +112,7 @@ def run_model(device, show_original, data, filter_method, show_bboxes, show_mask
             tf.image.resize_with_crop_or_pad(box, 224, 224) for box in bounding_boxes])
         np.savez_compressed('cropped_output', cropped_output)
 
-        cropped_stable_output = np.array([
-            tf.image.resize_with_crop_or_pad(box, 224, 224) for box in stable_boxes])
+
     
     
         
