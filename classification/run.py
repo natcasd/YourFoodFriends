@@ -151,12 +151,12 @@ def train(model, datasets, checkpoint_path, logs_path, init_epoch):
 
     # Keras callbacks for training
     callback_list = [
-        tf.keras.callbacks.TensorBoard(
-            log_dir=logs_path,
-            update_freq='batch',
-            profile_batch=0),
-        ImageLabelingLogger(logs_path, datasets),
-        CustomModelSaver(checkpoint_path, ARGS.task, hp.max_num_weights)
+        #tf.keras.callbacks.TensorBoard(
+         #   log_dir=logs_path,
+          #  update_freq='batch',
+           # profile_batch=0),
+        #ImageLabelingLogger(logs_path, datasets),
+        #CustomModelSaver(checkpoint_path, ARGS.task, hp.max_num_weights)
     ]
 
     # Include confusion logger in callbacks if flag set
@@ -263,7 +263,7 @@ def main():
         # the lime-image flag when calling run.py to investigate
         # i.e. python run.py --evaluate --lime-image test/Bedroom/image_003.jpg
         path = ARGS.data + os.sep + ARGS.lime_image
-        LIME_explainer(model, path, datasets.preprocess_fn, timestamp)
+        #LIME_explainer(model, path, datasets.preprocess_fn, timestamp)
     else:
         train(model, datasets, checkpoint_path, logs_path, init_epoch)
 
