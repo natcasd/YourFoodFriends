@@ -1,3 +1,7 @@
+
+import os
+os.environ['KMP_DUPLICATE_LIB_OK']='True'
+
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
@@ -7,9 +11,13 @@ import sys
 import tensorflow as tf
 from segment_anything import sam_model_registry, SamAutomaticMaskGenerator, SamPredictor
 
+
+
 # cutouts = []
 # def run_model(device='none', show_original='n', data='images/dog.jpg', filter_method='big', show_bboxes='n', show_masks='n'):
 def run_model(device, show_original, data, filter_method, show_bboxes, show_masks):
+    print("model running")
+
     def show_anns(anns):
         if len(anns) == 0:
             return
@@ -139,3 +147,4 @@ if __name__ == '__main__':
               show_bboxes=args.show_bboxes,
               show_masks=args.show_masks)
 
+# python3 sam_auto_tutorial.py -d 'images/food_tray.jpg' -dev none -f none -sb y -sm y
