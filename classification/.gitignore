@@ -1,2 +1,6 @@
 model_checkpoints
 saved_model
+simple_model
+
+checkpoints
+__pycache__

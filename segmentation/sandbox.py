@@ -7,6 +7,7 @@ npz = np.load('cropped_output.npz')
 for img in npz['arr_0']:
     plt.imshow(img)
     plt.show()
+segments = npz['arr_0']
 # sample_image = npz['arr_0'][0]
 
 # plt.imshow(sample_image)

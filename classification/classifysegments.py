@@ -1,24 +1,25 @@
 import numpy as np
 import tensorflow as tf
-from foodclassification import create_model, load_classes
-
-# from ..segmentation.sam_auto_tutorial import run_model
+from foodclassification import create_model
+import pickle
 
 img_shape = 224
 
-def classifyList(images):
-    classlist = load_classes()[0]
+def classify_list(images):
+    with open('class_names.pkl', 'rb') as f:
+        class_list = pickle.load(f)[0]
 
-    '''
+    
     # Load Checkpoints Strategy
     model = create_model()
-    model.load_weights('model_checkpoints/cp.ckpt')
-    '''
+    model.load_weights('checkpoints/050523-134826/weights.(0.12,0.31)@01.hdf5')
+    
 
+    '''
     # Load Model Strategy
     model = tf.keras.models.load_model('saved_model/my_model')
-    labellist = []
-
+    '''
+    label_list = []
     # print('classlist:', classlist)
     
     for i in images:
@@ -26,10 +27,10 @@ def classifyList(images):
         image = tf.expand_dims(image,0)
         predictions = model.predict(image, verbose=0)
         labelarg = np.argmax(predictions)
-        labellist.append(classlist[labelarg])
+        label_list.append(class_list[labelarg])
 
     print('exiting classifyList')
-    return labellist
+    return label_list
 
 def preprocess_img(image):
     """
@@ -46,5 +47,5 @@ segments = npz['arr_0']
 
 print('segments.shape:', segments.shape)
 
-labeled_list = classifyList(segments)
+labeled_list = classify_list(segments)
 print('labeled_list:', labeled_list)

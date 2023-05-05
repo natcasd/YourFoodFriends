@@ -1,46 +1,55 @@
 import tensorflow as tf
 import tensorflow_datasets as tfds
-from tensorflow.keras import layers, models
+from keras import layers, models
+from keras.layers import \
+       Conv2D, MaxPool2D, MaxPooling2D, Dropout, Flatten, Dense, \
+        BatchNormalization, Activation, GlobalAveragePooling2D, Add, \
+            ZeroPadding2D, AveragePooling2D
 import argparse
-import sys
 import pickle
+from keras import mixed_precision
+import hyperparameters as hp
+import os
+from datetime import datetime
+
+
 
 num_classes = 101
+# Black magic wtf
+mixed_precision.set_global_policy(policy="mixed_float16") # set global policy to mixed precision 
+mixed_precision.global_policy()
 
 def create_model():
+
+
+
+
     # Create base model
-    input_shape = (224, 224, 3)
+    input_shape = hp.img_size
     base_model = tf.keras.applications.vgg16.VGG16(include_top=False, weights='imagenet', input_shape=input_shape)
     base_model.trainable = False # freeze base model layers
 
-    flatten = layers.Flatten()
-    dense1 = layers.Dense(1000, activation='relu')
-    dense2 = layers.Dense(500, activation='relu')
     prediction = layers.Dense(num_classes, activation='softmax')
-
-    #outputs = layers.Activation("softmax", dtype=tf.float32, name="softmax_float32")(x) 
     model = tf.keras.Sequential([
-            base_model,
-            flatten,
-            dense1,
-            dense2,
-            prediction
-        ])
+        base_model,
+        Flatten(),
+        Dense(4096, activation='relu'),
+        Dropout(0.5),
+        Dense(4096, activation='relu'),
+        Dropout(0.5),
+        prediction
+    ])
 
     # Compile the model
     model.compile(loss="sparse_categorical_crossentropy", # Use sparse_categorical_crossentropy when labels are *not* one-hot
-                optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4),
+                optimizer=tf.keras.optimizers.Adam(hp.learning_rate),
                 metrics=["accuracy"])
     
     return model
 
-def load_classes():
-    with open('data.pkl', 'rb') as f:
-        class_names = pickle.load(f)
-        return class_names
-
-
-def run_model(load):
+# def run_model(load):
+def run_model():
+    '''
     if(load=='n'):
         (train_data, test_data), ds_info = tfds.load(name="food101", # target dataset to get from TFDS
                                                     split=["train", "validation"], # what splits of data should we get? note: not all datasets have train, valid, test
@@ -50,11 +59,10 @@ def run_model(load):
 
         class_names = ds_info.features["label"].names
 
-        with open('data.pkl', 'wb') as f:
-            pickle.dump([class_names], f)
+        with open('lol.pkl', 'w') as f:
+            pickle.dump([train_data, test_data, ds_info], f)
     elif(load=='y'):
-        with open('data.pkl', 'rb') as f:
-            class_names = pickle.load(f)
+        print('lol')
     else:
         (train_data, test_data), ds_info = tfds.load(name="food101", # target dataset to get from TFDS
                                                     split=["train", "validation"], # what splits of data should we get? note: not all datasets have train, valid, test
@@ -63,6 +71,14 @@ def run_model(load):
                                                     with_info=True) # include dataset metadata? if so, tfds.load() returns tuple (data, ds_info)
 
         class_names = ds_info.features["label"].names
+    '''
+    (train_data, test_data), ds_info = tfds.load(name="food101", # target dataset to get from TFDS
+                                            split=["train", "validation"], # what splits of data should we get? note: not all datasets have train, valid, test
+                                            shuffle_files=True, # shuffle files on download?
+                                            as_supervised=True, # download data in tuple format (sample, label), e.g. (image, label)
+                                            with_info=True) # include dataset metadata? if so, tfds.load() returns tuple (data, ds_info)
+
+    class_names = ds_info.features["label"].names
 
 
     def preprocess_img(image, label, img_shape=224):
@@ -77,14 +93,46 @@ def run_model(load):
     # Map preprocessing function to training data (and paralellize)
     train_data = train_data.map(map_func=preprocess_img, num_parallel_calls=tf.data.AUTOTUNE)
     # Shuffle train_data and turn it into batches and prefetch it (load it faster)
-    train_data = train_data.shuffle(buffer_size=1000).batch(batch_size=32).prefetch(buffer_size=tf.data.AUTOTUNE)
+    train_data = train_data.shuffle(hp.buffer_size).batch(hp.batch_size).prefetch(buffer_size=tf.data.AUTOTUNE)
 
     # Map prepreprocessing function to test data
     test_data = test_data.map(preprocess_img, num_parallel_calls=tf.data.AUTOTUNE)
     # Turn test data into batches (don't need to shuffle)
-    test_data = test_data.batch(32).prefetch(tf.data.AUTOTUNE)
+    test_data = test_data.batch(hp.batch_size).prefetch(tf.data.AUTOTUNE)
 
-    checkpoint_path = "model_checkpoints/cp.ckpt" # saving weights requires ".ckpt" extension
+    ''' Broken experiments
+    # Checkpoints
+    time_now = datetime.now()
+    timestamp = time_now.strftime("%m%d%y-%H%M%S")
+    checkpoint_path = "checkpoints" + os.sep + \
+            "your_model" + os.sep + timestamp + os.sep
+    if not os.path.exists(checkpoint_path):
+        os.makedirs(checkpoint_path)
+    logs_path = "logs" + os.sep + "your_model" + \
+        os.sep + timestamp + os.sep
+    callback_list = [
+        tf.keras.callbacks.TensorBoard(
+            log_dir=logs_path,
+            update_freq='batch',
+            profile_batch=0),
+        ImageLabelingLogger(logs_path),
+        CustomModelSaver(checkpoint_path, 'VGG_head', 5)
+    ]
+    # model_checkpoint = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
+    #                                                     monitor="val_accuracy", # save the model weights with best validation accuracy
+    #                                                     save_best_only=True, # only save the best weights
+    #                                                     save_weights_only=True, # only save model weights (not whole model)
+    #                                                     verbose=0) # don't print out whether or not model is being saved 
+    '''
+
+
+    # checkpoint_path = "model_checkpoints/cp.ckpt" # saving weights requires ".ckpt" extension
+    time_now = datetime.now()
+    timestamp = time_now.strftime("%m%d%y-%H%M%S")
+    checkpoint_path = f"checkpoints/{timestamp}/"
+    if not os.path.exists(checkpoint_path):
+        os.makedirs(checkpoint_path)
+    checkpoint_path += 'weights.({accuracy:.2},{val_accuracy:.2f})@{epoch:02d}.hdf5'
     model_checkpoint = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
                                                         monitor="val_accuracy", # save the model weights with best validation accuracy
                                                         save_best_only=True, # only save the best weights
@@ -94,13 +142,12 @@ def run_model(load):
     model = create_model()
     model.fit(
         train_data,
-        epochs=1,
+        epochs=hp.num_epochs,
         validation_data=test_data,
         callbacks = [model_checkpoint]
     )
 
-    model.save('saved_model/my_model')
-
+    # model.save('saved_model/my_model') #This is unnecessary
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -111,4 +158,5 @@ if __name__ == '__main__':
     args = parser.parse_args()
     print('args:', args)
 
-    run_model(load=args.load)
+    # run_model(load=args.load)
+    run_model()
