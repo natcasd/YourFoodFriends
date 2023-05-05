@@ -29,15 +29,17 @@ def create_model():
     base_model = tf.keras.applications.vgg16.VGG16(include_top=False, weights='imagenet', input_shape=input_shape)
     base_model.trainable = False # freeze base model layers
 
-    prediction = layers.Dense(num_classes, activation='softmax')
+    prediction = layers.Dense(num_classes, name='prediction')
+    output = layers.Activation('softmax', dtype='float32', name='output')
     model = tf.keras.Sequential([
         base_model,
-        Flatten(),
-        Dense(4096, activation='relu'),
+        GlobalAveragePooling2D(),
+        Dense(2048, activation='relu'),
         Dropout(0.5),
-        Dense(4096, activation='relu'),
+        Dense(2048, activation='relu'),
         Dropout(0.5),
-        prediction
+        prediction,
+        output
     ])
 
     # Compile the model
@@ -48,7 +50,7 @@ def create_model():
     return model
 
 # def run_model(load):
-def run_model():
+def run_model(load_checkpoint):
     '''
     if(load=='n'):
         (train_data, test_data), ds_info = tfds.load(name="food101", # target dataset to get from TFDS
@@ -132,19 +134,27 @@ def run_model():
     checkpoint_path = f"checkpoints/{timestamp}/"
     if not os.path.exists(checkpoint_path):
         os.makedirs(checkpoint_path)
-    checkpoint_path += 'weights.({accuracy:.2},{val_accuracy:.2f})@{epoch:02d}.hdf5'
-    model_checkpoint = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
+    # checkpoint_path += 'weights.({accuracy:.2},{val_accuracy:.2f})@{epoch:02d}.hdf5'
+    checkpoint_path += 'weights.hdf5'
+    checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
                                                         monitor="val_accuracy", # save the model weights with best validation accuracy
                                                         save_best_only=True, # only save the best weights
                                                         save_weights_only=True, # only save model weights (not whole model)
                                                         verbose=0) # don't print out whether or not model is being saved 
+    
+    log_path = f"logs/{timestamp}/"
+    if not os.path.exists(log_path):
+        os.makedirs(log_path)
+    log_callback = tf.keras.callbacks.TensorBoard(log_dir=log_path)
 
     model = create_model()
+    if(load_checkpoint != 'n'):
+        model.load_weights(load_checkpoint)
     model.fit(
         train_data,
-        epochs=hp.num_epochs,
+        epochs = 5,
         validation_data=test_data,
-        callbacks = [model_checkpoint]
+        callbacks = [checkpoint_callback, log_callback]
     )
 
     # model.save('saved_model/my_model') #This is unnecessary
@@ -152,11 +162,11 @@ def run_model():
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-l', '--load', choices=['y','n','q'],
+    parser.add_argument('-l', '--load_checkpoint',
                         default='n',help='Load existing test/train data')
     
     args = parser.parse_args()
     print('args:', args)
 
     # run_model(load=args.load)
-    run_model()
+    run_model(load_checkpoint=args.load_checkpoint)

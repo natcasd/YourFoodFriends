@@ -1,6 +1,6 @@
 import numpy as np
 import tensorflow as tf
-from foodclassification import create_model
+from foodclassification_old import create_model
 import pickle
 
 img_shape = 224
