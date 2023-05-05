@@ -19,7 +19,7 @@ def create_model():
     prediction = layers.Dense(num_classes, activation='softmax')
 
     #outputs = layers.Activation("softmax", dtype=tf.float32, name="softmax_float32")(x) 
-    model = models.Sequential([
+    model = tf.keras.Sequential([
             base_model,
             flatten,
             dense1,
@@ -34,6 +34,12 @@ def create_model():
     
     return model
 
+def load_classes():
+    with open('data.pkl', 'rb') as f:
+        class_names = pickle.load(f)
+        return class_names
+
+
 def run_model(load):
     if(load=='n'):
         (train_data, test_data), ds_info = tfds.load(name="food101", # target dataset to get from TFDS
@@ -45,10 +51,10 @@ def run_model(load):
         class_names = ds_info.features["label"].names
 
         with open('data.pkl', 'wb') as f:
-            pickle.dump([train_data, test_data, ds_info, class_names], f)
+            pickle.dump([class_names], f)
     elif(load=='y'):
         with open('data.pkl', 'rb') as f:
-            train_data, test_data, ds_info, class_names = pickle.load(f)
+            class_names = pickle.load(f)
     else:
         (train_data, test_data), ds_info = tfds.load(name="food101", # target dataset to get from TFDS
                                                     split=["train", "validation"], # what splits of data should we get? note: not all datasets have train, valid, test
@@ -79,7 +85,7 @@ def run_model(load):
     test_data = test_data.batch(32).prefetch(tf.data.AUTOTUNE)
 
     checkpoint_path = "model_checkpoints/cp.ckpt" # saving weights requires ".ckpt" extension
-    model_checkpoint = tf.keras.callbacks.ModelCheckpoint(checkpoint_path,
+    model_checkpoint = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
                                                         monitor="val_accuracy", # save the model weights with best validation accuracy
                                                         save_best_only=True, # only save the best weights
                                                         save_weights_only=True, # only save model weights (not whole model)
@@ -88,10 +94,13 @@ def run_model(load):
     model = create_model()
     model.fit(
         train_data,
-        epochs=3,
+        epochs=1,
         validation_data=test_data,
         callbacks = [model_checkpoint]
     )
+
+    model.save('saved_model/my_model')
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

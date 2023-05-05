@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import cv2
 
-npz = np.load('cropped_big_output.npz')
+npz = np.load('cropped_output.npz')
 
 for img in npz['arr_0']:
     plt.imshow(img)
