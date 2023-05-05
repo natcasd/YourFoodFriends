@@ -1,3 +1,6 @@
+import os
+os.environ['KMP_DUPLICATE_LIB_OK']='True'
+
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
@@ -6,10 +9,19 @@ import argparse
 import sys
 import tensorflow as tf
 from segment_anything import sam_model_registry, SamAutomaticMaskGenerator, SamPredictor
+from mpl_toolkits.axes_grid1 import ImageGrid
+import math
 
-# cutouts = []
-# def run_model(device='none', show_original='n', data='images/dog.jpg', filter_method='big', show_bboxes='n', show_masks='n'):
-def run_model(device, show_original, data, filter_method, show_bboxes, show_masks):
+'''
+# plotting fix lol
+import tkinter
+from matplotlib import use as mpl_use
+mpl_use('TkAgg')
+'''
+
+def run_model(device, show_original, data, filter_method, show_bboxes_grid, show_masks, show_each):
+    print("model running")
+
     def show_anns(anns):
         if len(anns) == 0:
             return
@@ -30,7 +42,7 @@ def run_model(device, show_original, data, filter_method, show_bboxes, show_mask
 
     image = cv2.imread(data)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
+    print('after reading image')
     if(show_original=='y'):
         plt.figure(figsize=(20,20))
         plt.imshow(image)
@@ -52,14 +64,16 @@ def run_model(device, show_original, data, filter_method, show_bboxes, show_mask
     if(device == 'cuda'):
         device = 'cuda'
         sam.to(device=device)
+        print('device loaded:', device)
     elif(device == 'mps'):
         device = torch.device('mps')
         sam.to(device=device)
+        print('device loaded:', device)
 
     mask_generator = SamAutomaticMaskGenerator(sam)
 
+    print('generating mask')
     masks = mask_generator.generate(image)
-
     print(len(masks))
     print(masks[0].keys())
 
@@ -75,46 +89,60 @@ def run_model(device, show_original, data, filter_method, show_bboxes, show_mask
         XYWH = mask['bbox']
         return image[XYWH[1]:XYWH[1]+XYWH[3], XYWH[0]:XYWH[0]+XYWH[2]]
     
+    print('creating bounding boxes')
     for mask in masks:
         prediction = mask['predicted_iou']
         stability = mask['stability_score']
         area = mask['area']
 
         bounding_box = get_bounding_box(mask)
-        if(show_bboxes=='y'):
+        if(show_each=='y'):
             plt.imshow(bounding_box)
             plt.title(f'Confidence:{prediction}\nStability:{stability}\nArea:{area}')
             plt.show() #TODO: White out everything except mask
         bounding_boxes.append(bounding_box)
+
     
 
+    # Below can be optimized into small if/else blocks
     if(filter_method=='stable'):
         stability_filter = 0.97
         filtered_stable_masks = filter(lambda mask : mask['stability_score'] > stability_filter, masks)
-        cropped_stable_output = np.array([
-            tf.image.resize_with_crop_or_pad(box, 224, 224) for box in stable_boxes])
         stable_boxes = [get_bounding_box(mask) for mask in filtered_stable_masks]
-        np.savez_compressed('cropped_stable_output', cropped_stable_output)
-
-            
+        
+        cropped_output = np.array([
+            tf.image.resize_with_crop_or_pad(box, 224, 224) for box in stable_boxes])
+                        
+        np.savez_compressed('cropped_stable_output', cropped_output)
 
     elif(filter_method=='big'):
         big_filter = 30000
         filtered_big_masks = filter(lambda mask: mask['area'] > big_filter, masks)
         big_boxes = [get_bounding_box(mask) for mask in filtered_big_masks]
 
-        cropped_big_output = np.array([
+        cropped_output = np.array([
             tf.image.resize_with_crop_or_pad(box, 224, 224) for box in big_boxes])
-        np.savez_compressed('cropped_big_output', cropped_big_output)
+
+        np.savez_compressed('cropped_big_output', cropped_output)
 
     else:
         cropped_output = np.array([
             tf.image.resize_with_crop_or_pad(box, 224, 224) for box in bounding_boxes])
+
         np.savez_compressed('cropped_output', cropped_output)
 
-
-    
-    
+    if(show_bboxes_grid=='y'):
+        num_imgs = len(cropped_output)
+        ncols = math.isqrt(num_imgs)
+        nrows = -(num_imgs // (-ncols))
+        fig = plt.figure(figsize=(20,20))
+        grid = ImageGrid(
+            fig, 111,
+            nrows_ncols=(nrows, ncols),
+            axes_pad=0.1
+        )
+        for ax, im in zip(grid, cropped_output): ax.imshow(im)
+        plt.show()
         
 
 if __name__ == '__main__':
@@ -128,10 +156,12 @@ if __name__ == '__main__':
                         default='images/food_tray.jpg', help='Path to image to segment')
     parser.add_argument('-f', '--filter_method', choices=['none', 'stable', 'big'], 
                         default='big',help='Filtermethod for bounding box outputs')
-    parser.add_argument('-sb', '--show_bboxes', choices=['y','n'], 
+    parser.add_argument('-sb', '--show_bboxes_grid', choices=['y','n'], 
                         default='n', help='Show bounding boxes, [y] or n')
     parser.add_argument('-sm', '--show_masks', choices=['y','n'], 
                         default='n', help='Show masks, [y] or n')
+    parser.add_argument('-se', '--show_each', choices=['y','n'],
+                        default='n',help='Show each individual bounding box')
     args = parser.parse_args()
     print('args:', args)
 
@@ -139,6 +169,8 @@ if __name__ == '__main__':
               show_original=args.show_original, 
               data=args.data, 
               filter_method=args.filter_method, 
-              show_bboxes=args.show_bboxes,
-              show_masks=args.show_masks)
+              show_bboxes_grid=args.show_bboxes_grid,
+              show_masks=args.show_masks,
+              show_each=args.show_each)
 
+# python3 sam_auto_tutorial.py -d 'images/food_tray.jpg' -dev none -f none -sb y -sm y
