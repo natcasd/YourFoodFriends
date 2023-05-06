@@ -1,6 +1,6 @@
 import numpy as np
 import tensorflow as tf
-from foodclassification_old import create_model
+from food_InceptionResNetV2 import create_model
 import pickle
 
 img_shape = 224
@@ -12,7 +12,7 @@ def classify_list(images):
     
     # Load Checkpoints Strategy
     model = create_model()
-    model.load_weights('checkpoints/050523-134826/weights.(0.12,0.31)@01.hdf5')
+    model.load_weights('checkpoints/050523-180311/weights.hdf5')
     
 
     '''
@@ -37,8 +37,8 @@ def preprocess_img(image):
     Converts image datatype from 'uint8' -> 'float32' and reshapes image to
     [img_shape, img_shape, color_channels]
     """
-    # image = tf.image.resize(image, [img_shape, img_shape]) # reshape to img_shape # Already resized
-    image = tf.keras.applications.vgg16.preprocess_input(image) #vgg16 required
+    image = tf.image.resize(image, [299, 299]) # reshape to img_shape # Already resized
+    image = tf.keras.applications.inception_resnet_v2.preprocess_input(image) #vgg16 required
 
     return tf.cast(image, tf.float32) # return (float32_image, label) tuple
 
