@@ -46,7 +46,7 @@ def create_model():
     return model
 
 # def run_model(load):
-def run_model(load_checkpoint='n'):
+def run_model(load_checkpoint):
     (train_data, test_data), ds_info = tfds.load(name="food101", # target dataset to get from TFDS
                                             split=["train", "validation"], # what splits of data should we get? note: not all datasets have train, valid, test
                                             shuffle_files=True, # shuffle files on download?
@@ -121,5 +121,4 @@ if __name__ == '__main__':
     print('args:', args)
 
     # run_model(load=args.load)
-    # run_model(load_checkpoint=args.load_checkpoint)
-    run_model()
+    run_model(load_checkpoint=args.load_checkpoint)
