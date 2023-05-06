@@ -7,3 +7,4 @@ logs
 __pycache__
 
 run_grid_gpu.sh.*
+job_status.out

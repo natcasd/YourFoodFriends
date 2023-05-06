@@ -103,7 +103,8 @@ def run_model(load_checkpoint):
         train_data,
         epochs = 30,
         validation_data=test_data,
-        callbacks = [checkpoint_callback, log_callback]
+        callbacks = [checkpoint_callback, log_callback],
+        verbose=2
     )
     '''
     # model_path = f"models/{timestamp}/model"
