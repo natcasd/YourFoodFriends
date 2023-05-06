@@ -5,3 +5,4 @@ simple_model
 checkpoints
 logs
 __pycache__
+job_status.out
