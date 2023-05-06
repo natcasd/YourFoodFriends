@@ -31,7 +31,7 @@ def create_model():
         base_model,
         GlobalAveragePooling2D(),
         Dense(2048, activation='relu'),
-        Dropout(0.5),
+        Dropout(0.3),
         # Dense(2048, activation='relu'),
         # Dropout(0.5),
         prediction,
@@ -84,7 +84,7 @@ def run_model(load_checkpoint):
     checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
                                                         monitor="val_accuracy", # save the model weights with best validation accuracy
                                                         save_best_only=True, # only save the best weights
-                                                        save_weights_only=True, # only save model weights (not whole model)
+                                                        save_weights_only=False, # want entire model!
                                                         verbose=0) # don't print out whether or not model is being saved 
     
     log_path = f"logs/{timestamp}/"
