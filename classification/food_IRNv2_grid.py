@@ -16,8 +16,8 @@ from datetime import datetime
 
 num_classes = 101
 # Black magic wtf
-mixed_precision.set_global_policy(policy="mixed_float16") # set global policy to mixed precision 
-mixed_precision.global_policy()
+# mixed_precision.set_global_policy(policy="mixed_float16") # set global policy to mixed precision 
+# mixed_precision.global_policy()
 
 def create_model():
     # Create base model
@@ -50,7 +50,7 @@ def run_model(load_checkpoint='n'):
     (train_data, test_data), ds_info = tfds.load(name="food101", # target dataset to get from TFDS
                                             split=["train", "validation"], # what splits of data should we get? note: not all datasets have train, valid, test
                                             shuffle_files=True, # shuffle files on download?
-                                            as_supervised=True, # download data in tuple format (sample, label), e.g. (image, label)
+                                            as_supervised=False,
                                             with_info=True) # include dataset metadata? if so, tfds.load() returns tuple (data, ds_info)
 
     def preprocess_img(image, label, img_shape=299):
@@ -84,7 +84,7 @@ def run_model(load_checkpoint='n'):
     checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
                                                         monitor="val_accuracy", # save the model weights with best validation accuracy
                                                         save_best_only=True, # only save the best weights
-                                                        save_weights_only=False,
+                                                        save_weights_only=True, # only save model weights (not whole model)
                                                         verbose=0) # don't print out whether or not model is being saved 
     
     log_path = f"logs/{timestamp}/"
@@ -103,7 +103,8 @@ def run_model(load_checkpoint='n'):
         train_data,
         epochs = 30,
         validation_data=test_data,
-        callbacks = [checkpoint_callback, log_callback]
+        callbacks = [checkpoint_callback, log_callback],
+        verbose=2
     )
     '''
     # model_path = f"models/{timestamp}/model"
