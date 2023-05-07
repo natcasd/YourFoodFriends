@@ -1,8 +1,12 @@
 model_checkpoints
 saved_model
 simple_model
+models
+
 
 checkpoints
+finetune_checkpoints
+
 logs
 __pycache__
 job_status.out

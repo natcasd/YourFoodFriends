@@ -19,7 +19,7 @@ from matplotlib import use as mpl_use
 mpl_use('TkAgg')
 '''
 
-def run_model(device, show_original, data, filter_method, show_bboxes_grid, show_masks, show_each):
+def run_model(device='none', show_original='n', data='images/food_tray.jpg', filter_method='big', show_bboxes_grid='n', show_masks='n', show_each='n'):
     print("model running")
 
     def show_anns(anns):
@@ -143,6 +143,8 @@ def run_model(device, show_original, data, filter_method, show_bboxes_grid, show
         )
         for ax, im in zip(grid, cropped_output): ax.imshow(im)
         plt.show()
+    
+    return cropped_output
         
 
 if __name__ == '__main__':
