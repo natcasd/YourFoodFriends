@@ -21,54 +21,16 @@ num_classes = 101
 mixed_precision.set_global_policy(policy="mixed_float16") 
 mixed_precision.global_policy()
 
-def run_model(load_checkpoint):
-    #########################
-    # LOAD AND PROCESS DATA
-    #########################
-    (train_data, test_data), ds_info = tfds.load(name="food101", 
-                                            split=["train", "validation"], 
-                                            shuffle_files=True,
-                                            as_supervised=True,
-                                            with_info=True)
-    
-    def preprocess_img(image, label, img_shape=299):
-        """
-        Converts image datatype from 'uint8' -> 'float32' and reshapes image to
-        [img_shape, img_shape, color_channels]
-        """
-        image = tf.image.resize(image, [img_shape, img_shape])
-        image = tf.keras.applications.inception_resnet_v2.preprocess_input(image)
-        return tf.cast(image, tf.float32), label
+def preprocess_image(image, label, img_shape=299):
+    """
+    Converts image datatype from 'uint8' -> 'float32' and reshapes image to
+    [img_shape, img_shape, color_channels]
+    """
+    image = tf.image.resize(image, [img_shape, img_shape])
+    image = tf.keras.applications.inception_resnet_v2.preprocess_input(image)
+    return tf.cast(image, tf.float32), label
 
-    # Map preprocessing function to training data (and paralellize)
-    train_data = train_data.map(map_func=preprocess_img, num_parallel_calls=tf.data.AUTOTUNE)
-    # Shuffle train_data and turn it into batches and prefetch it (load it faster)
-    train_data = train_data.shuffle(32).batch(32).prefetch(buffer_size=tf.data.AUTOTUNE)
-
-    # Map prepreprocessing function to test data
-    test_data = test_data.map(preprocess_img, num_parallel_calls=tf.data.AUTOTUNE)
-    # Turn test data into batches (don't need to shuffle)
-    test_data = test_data.batch(32).prefetch(tf.data.AUTOTUNE)
-
-    #########################
-    # CREATE MODEL
-    #########################
-    loaded_model = create_model()
-    loaded_model.load_weights('checkpoints/050523-180311/weights.hdf5') #050523-180311 best IRNv2
-
-    for layer in loaded_model.layers:
-        layer.trainable = True
-        print(layer.name, layer.trainable, layer.dtype, layer.dtype_policy)
-    
-    # Compile the model
-    loaded_model.compile(loss="sparse_categorical_crossentropy",
-                            optimizer=tf.keras.optimizers.Adam(0.0001),
-                            metrics=["accuracy"])
-    
-    #########################
-    # CALLBACKS
-    #########################
-
+def process_callbacks(loaded_model):
     time_now = datetime.now()
     timestamp = time_now.strftime("%m%d%y-%H%M%S")
 
@@ -99,26 +61,58 @@ def run_model(load_checkpoint):
     csv_logger_callback = tf.keras.callbacks.CSVLogger(csv_logger_path)
 
     # MODEL FITTING CALLACKS
-    
     early_stopping = tf.keras.callbacks.EarlyStopping(monitor="val_accuracy", 
-                                                    patience=3) # Stop if val_accuracy doesn't improve after 3 epochs
-    # Creating learning rate reduction callback
+                                                      patience=3) # Stop if val_accuracy doesn't improve after 3 epochs
     reduce_lr = tf.keras.callbacks.ReduceLROnPlateau(monitor="val_accuracy",  
-                                                    factor=0.2, # Reduce LR factor of 0.2
-                                                    patience=2, # Trigger LR reduction if val_accuracy doesn't improve after 2 epochs
-                                                    verbose=1,
-                                                    min_lr=1e-7)
+                                                     factor=0.2, # Reduce LR factor of 0.2
+                                                     patience=2, # Trigger LR reduction if val_accuracy doesn't improve after 2 epochs
+                                                     verbose=1,
+                                                     min_lr=1e-7)
+    
+    return [checkpoint_callback, log_callback, csv_logger_callback, early_stopping, reduce_lr]
 
-    #########################
-    # FIT MODEL
-    #########################
+def run_model(load_checkpoint):
+    # Load and process data
+    (train_data, test_data), ds_info = tfds.load(name="food101", 
+                                            split=["train", "validation"], 
+                                            shuffle_files=True,
+                                            as_supervised=True,
+                                            with_info=True)
+    
+    # Preprocess training and test data
+    train_data = train_data.map(map_func=preprocess_image, 
+                                num_parallel_calls=tf.data.AUTOTUNE)
+    test_data = test_data.map(preprocess_image, 
+                              num_parallel_calls=tf.data.AUTOTUNE)
+    
+    # Batch and prefetch data
+    train_data = train_data.shuffle(32).batch(32).prefetch(buffer_size=tf.data.AUTOTUNE) #Shuffle!
+    test_data = test_data.batch(32).prefetch(tf.data.AUTOTUNE) 
+
+    # Create the model
+    loaded_model = create_model()
+    loaded_model.load_weights('checkpoints/050523-180311/weights.hdf5') #050523-180311 best IRNv2
+
+    # Unfreeze all layers
+    for layer in loaded_model.layers:
+        layer.trainable = True
+    
+    # Compile the model
+    loaded_model.compile(loss="sparse_categorical_crossentropy",
+                            optimizer=tf.keras.optimizers.Adam(0.0001),
+                            metrics=["accuracy"])
+    
+    # Load callbacks
+    processed_callbacks = process_callbacks(loaded_model)
+
+    # Fit the model
     loaded_model.fit(
         train_data,
-        epochs = 100,
+        epochs=100,
         steps_per_epoch=len(train_data),
         validation_data=test_data,
         validation_steps=int(0.15 * len(test_data)), # Don't have to validate everything
-        callbacks = [checkpoint_callback, log_callback, csv_logger_callback, early_stopping, reduce_lr],
+        callbacks = processed_callbacks,
         verbose=2
     )
 

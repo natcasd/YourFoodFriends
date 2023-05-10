@@ -1,13 +1,6 @@
-import numpy as np
 import tensorflow as tf
-from food_InceptionResNetV2 import create_model
-import pickle
 import tensorflow_datasets as tfds
 
-# model = create_model()
-# model.load_weights('finetune_checkpoints/050823-114616/weights.hdf5')
-
-# model = tf.keras.models.load_model('finetune_checkpoints/050723-231544/weights.hdf5')
 model = tf.keras.models.load_model('finetune_checkpoints/050823-171401/model.hdf5')
 print(model.summary())
 
