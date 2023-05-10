@@ -20,24 +20,6 @@ mixed_precision.set_global_policy(policy="mixed_float16") # set global policy to
 mixed_precision.global_policy()
 
 def create_model():
-    # Create base model
-    # input_shape = (299, 299, 3)
-    # base_model = tf.keras.applications.Xception(include_top=False, weights='imagenet', input_shape=input_shape)
-    # base_model.trainable = False # freeze base model layers
-
-    # prediction = layers.Dense(num_classes, name='prediction')
-    # output = layers.Activation('softmax', dtype='float32', name='output')
-    # model = tf.keras.Sequential([
-    #     base_model,
-    #     GlobalAveragePooling2D(),
-    #     Dense(4096, activation='relu'),
-    #     Dropout(0.5),
-    #     # Dense(2048, activation='relu'),
-    #     # Dropout(0.5),
-    #     prediction,
-    #     output
-    # ])
-
     input_shape = (299, 299, 3)
     base_model = tf.keras.applications.Xception(include_top=False)
     base_model.trainable = False

@@ -15,14 +15,10 @@ from datetime import datetime
 
 
 num_classes = 101
-# Black magic wtf
 mixed_precision.set_global_policy(policy="mixed_float16") # set global policy to mixed precision 
 mixed_precision.global_policy()
 
 def create_model():
-
-
-
 
     # Create base model
     input_shape = hp.img_size
@@ -51,29 +47,6 @@ def create_model():
 
 # def run_model(load):
 def run_model(load_checkpoint):
-    '''
-    if(load=='n'):
-        (train_data, test_data), ds_info = tfds.load(name="food101", # target dataset to get from TFDS
-                                                    split=["train", "validation"], # what splits of data should we get? note: not all datasets have train, valid, test
-                                                    shuffle_files=True, # shuffle files on download?
-                                                    as_supervised=True, # download data in tuple format (sample, label), e.g. (image, label)
-                                                    with_info=True) # include dataset metadata? if so, tfds.load() returns tuple (data, ds_info)
-
-        class_names = ds_info.features["label"].names
-
-        with open('lol.pkl', 'w') as f:
-            pickle.dump([train_data, test_data, ds_info], f)
-    elif(load=='y'):
-        print('lol')
-    else:
-        (train_data, test_data), ds_info = tfds.load(name="food101", # target dataset to get from TFDS
-                                                    split=["train", "validation"], # what splits of data should we get? note: not all datasets have train, valid, test
-                                                    shuffle_files=True, # shuffle files on download?
-                                                    as_supervised=True, # download data in tuple format (sample, label), e.g. (image, label)
-                                                    with_info=True) # include dataset metadata? if so, tfds.load() returns tuple (data, ds_info)
-
-        class_names = ds_info.features["label"].names
-    '''
     (train_data, test_data), ds_info = tfds.load(name="food101", # target dataset to get from TFDS
                                             split=["train", "validation"], # what splits of data should we get? note: not all datasets have train, valid, test
                                             shuffle_files=True, # shuffle files on download?
