@@ -3,7 +3,7 @@ from segmentation import sam_auto_tutorial
 import tensorflow as tf
 import pickle
 import matplotlib.pyplot as plt
-import cv2
+import matplotlib.patches as patches
 img_shape = 224
 
 counter = 0
@@ -14,13 +14,19 @@ def classify_list(images):
     
     # Load Model Strategy
     model = tf.keras.models.load_model('classification/finetune_checkpoints/050823-171401/model.hdf5')
+    
+    # Instantiate accumulator lists for classifier predictions
     label_list = []
     max_list = []
 
     # Predict each image
     for i in images:
+        '''
+        # Save masks
         plt.imshow(i)
         plt.savefig(f'fnf/experiments/mask{counter}.jpg') # Save masks
+        '''
+
         image = preprocess_img(i)
         image = tf.expand_dims(image,0)
         predictions = model.predict(image, verbose=0)
@@ -41,29 +47,40 @@ def preprocess_img(image):
     image = tf.keras.applications.inception_resnet_v2.preprocess_input(image) #vgg16 required
     return tf.cast(image, tf.float32) # return (float32_image, label) tuple
 
-print('before sam')
-segments1, segments2, coordinatelist, imageloc = sam_auto_tutorial.run_model(device='cuda', filter_method='boundingboxes', data = 'segmentation/images/ratty1.jpg')
-print('after sam')
-print('coordinateList.shape:', len(coordinatelist))
+# Obtain SAM masks
+segments1, segments2, coordinatelist, imageloc = \
+    sam_auto_tutorial.run_model(
+    device='cuda', 
+    filter_method='boundingboxes', 
+    data = 'segmentation/images/team_picture.png')
 
-labeled_list1, max_list1 = classify_list(segments1)
-labeled_list2, max_list2 = classify_list(segments2)
-#labeled_list = ['yomama' for x in range(70)]
+# Obtain classifier predictions
+labeled_list1, max_list1 = classify_list(segments1) # Pdns on cropped BBs
+labeled_list2, max_list2 = classify_list(segments2) # Pdns on uncropped BBs
 
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
-
+# Backbone original image
 wholeimage = plt.imread(imageloc)
 fig, ax = plt.subplots(1)
 ax.imshow(wholeimage)
 
+# For each classifier prediction, draw bounding box w/ label
 for i,j in enumerate(coordinatelist):
+
+    # Ensemble vote between cropped and un-cropped bounding boxes
     if max(max_list1[i], max_list2[i]) > 0.45:
-    # if max_list1[i] > 0.6:
-        rect = patches.Rectangle((j[1], j[0]), j[3], j[2], linewidth=2, edgecolor='r', facecolor='none')
+        # Draw rectangle about bounding box
+        rect = patches.Rectangle(
+            (j[0], j[1]), j[2], j[3],
+            linewidth=2,
+            edgecolor='r',
+            facecolor='none')
         ax.add_patch(rect)
-        labelx = j[1]
-        labely = j[0]-5 # Slightly above the top-left corner
+
+        # Label positioning
+        labelx = j[0]
+        labely = j[1]-5 # Slightly above the top-left corner
+
+        # Add better label
         if(max_list1[i]>=max_list2[i]):
             ax.text(labelx, labely, labeled_list1[i], fontsize=12, color='k', weight='bold')
         else:
