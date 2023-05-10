@@ -8,7 +8,6 @@ from keras.layers import \
 import argparse
 import pickle
 from keras import mixed_precision
-import hyperparameters as hp
 import os
 from datetime import datetime
 
@@ -66,7 +65,7 @@ def create_model():
 
 
     # Create base model
-    input_shape = hp.img_size
+    input_shape = (224,224,3)
     base_model = tf.keras.applications.vgg16.VGG16(include_top=False, weights='imagenet', input_shape=input_shape)
     base_model.trainable = False # freeze base model layers
 
