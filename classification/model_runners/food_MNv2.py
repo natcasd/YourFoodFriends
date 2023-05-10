@@ -41,12 +41,12 @@ def process_callbacks(loaded_model):
     log_callback = tf.keras.callbacks.TensorBoard(log_dir=log_path)
 
     # MODEL SUMMARY LOGGING
-    summary_path = f"../finetune_checkpoints/{timestamp}/summary.txt"
+    summary_path = f"../checkpoints/{timestamp}/summary.txt"
     with open(summary_path, 'w') as f:
         loaded_model.summary(print_fn=lambda x: f.write(x + '\n'))
     
     # CSV LOGGING CALLBACK
-    csv_logger_path = f"../finetune_checkpoints/{timestamp}/epochs.csv"
+    csv_logger_path = f"../checkpoints/{timestamp}/epochs.csv"
     csv_logger_callback = tf.keras.callbacks.CSVLogger(csv_logger_path)
 
     return [checkpoint_callback, log_callback, csv_logger_callback]

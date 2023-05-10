@@ -163,7 +163,7 @@ def run_model(load_checkpoint):
     # checkpoint_path = "model_checkpoints/cp.ckpt" # saving weights requires ".ckpt" extension
     time_now = datetime.now()
     timestamp = time_now.strftime("%m%d%y-%H%M%S")
-    checkpoint_path = f"checkpoints/{timestamp}/"
+    checkpoint_path = f"../checkpoints/{timestamp}/"
     if not os.path.exists(checkpoint_path):
         os.makedirs(checkpoint_path)
     # checkpoint_path += 'weights.({accuracy:.2},{val_accuracy:.2f})@{epoch:02d}.hdf5'
