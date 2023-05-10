@@ -1,5 +1,5 @@
 import numpy as np
-from segmentation import sam_auto_tutorial
+from segmentation import sam_mask_generator
 import tensorflow as tf
 import pickle
 import matplotlib.pyplot as plt
@@ -33,6 +33,6 @@ def classify_list(images):
     print('exiting classifyList')
     return label_list, max_list
 
-segments1, segments2, coordinatelist, imageloc = sam_auto_tutorial.run_model(device='cuda', filter_method='boundingboxes', data = 'segmentation/images/ratty1.jpg')
+segments1, segments2, coordinatelist, imageloc = sam_mask_generator.run_model(device='cuda', filter_method='boundingboxes', data = 'segmentation/images/ratty1.jpg')
 labeled_list1, max_list1 = classify_list(segments1)
 labeled_list2, max_list2 = classify_list(segments2)

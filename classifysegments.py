@@ -1,5 +1,5 @@
 import numpy as np
-from segmentation import sam_auto_tutorial
+from segmentation import sam_mask_generator
 import tensorflow as tf
 import pickle
 import matplotlib.pyplot as plt
@@ -49,7 +49,7 @@ def preprocess_img(image):
 
 # Obtain SAM masks
 segments1, segments2, coordinatelist, imageloc = \
-    sam_auto_tutorial.run_model(
+    sam_mask_generator.run_model(
     device='cuda', 
     data = 'segmentation/images/team_picture.png')
 
