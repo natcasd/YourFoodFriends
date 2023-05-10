@@ -1,19 +1,10 @@
 import tensorflow as tf
 import tensorflow_datasets as tfds
-import argparse
 from keras import mixed_precision
+import argparse
 import os
 from datetime import datetime
-
-# Which model to build from?
-# Only needed if loading weights and not models
-
-# from food_Xception import create_model
-# from food_ENB3 import create_model
-from classification.model_runners.food_IRNv2 import create_model
-# from food_MNv2 import create_model
-
-
+import model_runners
 
 num_classes = 101
 
@@ -35,7 +26,7 @@ def process_callbacks(loaded_model):
     timestamp = time_now.strftime("%m%d%y-%H%M%S")
 
     # CHECKPOINT CALLBACK
-    checkpoint_path = f"finetune_checkpoints/{timestamp}/"
+    checkpoint_path = f"../finetune_checkpoints/{timestamp}/"
     if not os.path.exists(checkpoint_path):
         os.makedirs(checkpoint_path)
     checkpoint_path += 'model.hdf5'
@@ -46,18 +37,18 @@ def process_callbacks(loaded_model):
                                                         # save_weights_only=True, # Save only weights; USE WITH EFFICIENTNET
                                                         verbose=0) # Don't print save messages
     # TENSORBOARD LOGGING CALLBACK
-    log_path = f"logs/{timestamp}/"
+    log_path = f"../logs/{timestamp}/"
     if not os.path.exists(log_path):
         os.makedirs(log_path)
     log_callback = tf.keras.callbacks.TensorBoard(log_dir=log_path)
 
     # MODEL SUMMARY LOGGING
-    summary_path = f"finetune_checkpoints/{timestamp}/summary.txt"
+    summary_path = f"../finetune_checkpoints/{timestamp}/summary.txt"
     with open(summary_path, 'w') as f:
         loaded_model.summary(print_fn=lambda x: f.write(x + '\n'))
     
     # CSV LOGGING CALLBACK
-    csv_logger_path = f"finetune_checkpoints/{timestamp}/epochs.csv"
+    csv_logger_path = f"../finetune_checkpoints/{timestamp}/epochs.csv"
     csv_logger_callback = tf.keras.callbacks.CSVLogger(csv_logger_path)
 
     # MODEL FITTING CALLACKS
@@ -90,8 +81,8 @@ def run_model(load_checkpoint):
     test_data = test_data.batch(32).prefetch(tf.data.AUTOTUNE) 
 
     # Create the model
-    loaded_model = create_model()
-    loaded_model.load_weights('checkpoints/050523-180311/weights.hdf5') #050523-180311 best IRNv2
+    loaded_model = model_runners.food_IRNv2.create_model()
+    loaded_model.load_weights('../checkpoints/050523-180311/weights.hdf5') #050523-180311 best IRNv2
 
     # Unfreeze all layers
     for layer in loaded_model.layers:
@@ -118,7 +109,7 @@ def run_model(load_checkpoint):
 
     '''
     # This is an alternative to model saving
-    unfrozen_model_path = f'finetune_checkpoints/{timestamp}/unfrozen_model'
+    unfrozen_model_path = f'../finetune_checkpoints/{timestamp}/unfrozen_model'
     if not os.path.exists(unfrozen_model_path):
         os.makedirs(unfrozen_model_path)
     
@@ -132,7 +123,7 @@ def run_model(load_checkpoint):
 
     un_freeze(loaded_model)
 
-    frozen_model_path = f'finetune_checkpoints/{timestamp}/frozen_model'
+    frozen_model_path = f'../finetune_checkpoints/{timestamp}/frozen_model'
     if not os.path.exists(frozen_model_path):
         os.makedirs(frozen_model_path)
     

@@ -1,37 +1,23 @@
 import tensorflow as tf
-import tensorflow_datasets as tfds
-from tensorflow import keras
-from keras import layers, models
-from keras.layers import \
-       Conv2D, MaxPool2D, MaxPooling2D, Dropout, Flatten, Dense, \
-        BatchNormalization, Activation, GlobalAveragePooling2D, Add, \
-            ZeroPadding2D, AveragePooling2D
-import argparse
-import pickle
-from keras import mixed_precision
-# import hyperparameters as hp
+from keras import layers, utils, mixed_precision
 import os
 from datetime import datetime
-# from food_Xception import create_model
-# from food_ENB3 import create_model
-# from food_InceptionResNetV2 import create_model
-# from food_MNv2 import create_model
 
 mixed_precision.set_global_policy(policy="mixed_float16") # set global policy to mixed precision 
 mixed_precision.global_policy()
 
-food5k_path = 'data/food5k/'
-train_data = keras.utils.image_dataset_from_directory(
+food5k_path = '../data/food5k/'
+train_data = utils.image_dataset_from_directory(
     directory=food5k_path+'training/',
     labels='inferred',
     label_mode='categorical'
 )
-test_data = keras.utils.image_dataset_from_directory(
+test_data = utils.image_dataset_from_directory(
     directory=food5k_path+'validation/',
     labels='inferred',
     label_mode='categorical'
 )
-evaluation_data = keras.utils.image_dataset_from_directory(
+evaluation_data = utils.image_dataset_from_directory(
     directory=food5k_path+'evaluation/',
     labels='inferred',
     label_mode='categorical'
@@ -55,14 +41,14 @@ x = layers.Dense(2, name='logits')(x)
 outputs = layers.Activation('softmax', dtype=tf.float32, name='softmax_float32')(x)
 model = tf.keras.Model(inputs, outputs)
 
-model.compile(optimizer=keras.optimizers.Adam(), loss='categorical_crossentropy', metrics=['accuracy'])
+model.compile(optimizer=tf.keras.optimizers.Adam(), loss='categorical_crossentropy', metrics=['accuracy'])
 
 ############################################
 # LOGGING
 ############################################
 time_now = datetime.now()
 timestamp = time_now.strftime("%m%d%y-%H%M%S")
-checkpoint_path = f"fnf/checkpoints/{timestamp}/"
+checkpoint_path = f"checkpoints/{timestamp}/"
 if not os.path.exists(checkpoint_path):
     os.makedirs(checkpoint_path)
 checkpoint_path += 'models.hdf5'
@@ -72,16 +58,16 @@ checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_pat
                                                     save_weights_only=False, # want entire model!
                                                     verbose=0) # don't print out whether or not model is being saved 
 
-log_path = f"fnf/logs/{timestamp}/"
+log_path = f"logs/{timestamp}/"
 if not os.path.exists(log_path):
     os.makedirs(log_path)
 log_callback = tf.keras.callbacks.TensorBoard(log_dir=log_path)
 
-summary_path = f"fnf/checkpoints/{timestamp}/summary.txt"
+summary_path = f"checkpoints/{timestamp}/summary.txt"
 with open(summary_path, 'w') as f:
     model.summary(print_fn=lambda x: f.write(x + '\n'))
 
-csv_logger_path = f"fnf/checkpoints/{timestamp}/epochs.csv"
+csv_logger_path = f"checkpoints/{timestamp}/epochs.csv"
 csv_logger_callback = tf.keras.callbacks.CSVLogger(csv_logger_path)
 
 ############################################

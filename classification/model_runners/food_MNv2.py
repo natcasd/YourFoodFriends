@@ -1,8 +1,7 @@
 import tensorflow as tf
 import tensorflow_datasets as tfds
-from keras import layers, models
+from keras import layers, mixed_precision
 import argparse
-from keras import mixed_precision
 import os
 from datetime import datetime
 
@@ -26,7 +25,7 @@ def process_callbacks(loaded_model):
     timestamp = time_now.strftime("%m%d%y-%H%M%S")
 
     # CHECKPOINT CALLBACK
-    checkpoint_path = f"finetune_checkpoints/{timestamp}/"
+    checkpoint_path = f"../checkpoints/{timestamp}/"
     if not os.path.exists(checkpoint_path):
         os.makedirs(checkpoint_path)
     checkpoint_path += 'model.hdf5'
@@ -36,18 +35,18 @@ def process_callbacks(loaded_model):
                                                         save_weights_only=False, # Save entire model;
                                                         verbose=0) # Don't print save messages
     # TENSORBOARD LOGGING CALLBACK
-    log_path = f"logs/{timestamp}/"
+    log_path = f"../logs/{timestamp}/"
     if not os.path.exists(log_path):
         os.makedirs(log_path)
     log_callback = tf.keras.callbacks.TensorBoard(log_dir=log_path)
 
     # MODEL SUMMARY LOGGING
-    summary_path = f"finetune_checkpoints/{timestamp}/summary.txt"
+    summary_path = f"../finetune_checkpoints/{timestamp}/summary.txt"
     with open(summary_path, 'w') as f:
         loaded_model.summary(print_fn=lambda x: f.write(x + '\n'))
     
     # CSV LOGGING CALLBACK
-    csv_logger_path = f"finetune_checkpoints/{timestamp}/epochs.csv"
+    csv_logger_path = f"../finetune_checkpoints/{timestamp}/epochs.csv"
     csv_logger_callback = tf.keras.callbacks.CSVLogger(csv_logger_path)
 
     return [checkpoint_callback, log_callback, csv_logger_callback]

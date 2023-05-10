@@ -1,17 +1,9 @@
 import tensorflow as tf
 import tensorflow_datasets as tfds
-from keras import layers, models
-from keras.layers import \
-       Conv2D, MaxPool2D, MaxPooling2D, Dropout, Flatten, Dense, \
-        BatchNormalization, Activation, GlobalAveragePooling2D, Add, \
-            ZeroPadding2D, AveragePooling2D
+from keras import layers, mixed_precision
 import argparse
-import pickle
-from keras import mixed_precision
 import os
 from datetime import datetime
-
-
 
 num_classes = 101
 
@@ -33,7 +25,7 @@ def process_callbacks(loaded_model):
     timestamp = time_now.strftime("%m%d%y-%H%M%S")
 
     # CHECKPOINT CALLBACK
-    checkpoint_path = f"finetune_checkpoints/{timestamp}/"
+    checkpoint_path = f"../checkpoints/{timestamp}/"
     if not os.path.exists(checkpoint_path):
         os.makedirs(checkpoint_path)
     checkpoint_path += 'model.hdf5'
@@ -43,18 +35,18 @@ def process_callbacks(loaded_model):
                                                         save_weights_only=False, # Save entire model;
                                                         verbose=0) # Don't print save messages
     # TENSORBOARD LOGGING CALLBACK
-    log_path = f"logs/{timestamp}/"
+    log_path = f"../logs/{timestamp}/"
     if not os.path.exists(log_path):
         os.makedirs(log_path)
     log_callback = tf.keras.callbacks.TensorBoard(log_dir=log_path)
 
     # MODEL SUMMARY LOGGING
-    summary_path = f"finetune_checkpoints/{timestamp}/summary.txt"
+    summary_path = f"../checkpoints/{timestamp}/summary.txt"
     with open(summary_path, 'w') as f:
         loaded_model.summary(print_fn=lambda x: f.write(x + '\n'))
     
     # CSV LOGGING CALLBACK
-    csv_logger_path = f"finetune_checkpoints/{timestamp}/epochs.csv"
+    csv_logger_path = f"../checkpoints/{timestamp}/epochs.csv"
     csv_logger_callback = tf.keras.callbacks.CSVLogger(csv_logger_path)
 
     return [checkpoint_callback, log_callback, csv_logger_callback]
@@ -73,18 +65,18 @@ def create_model():
     output = layers.Activation('softmax', dtype='float32', name='output')
     model = tf.keras.Sequential([
         base_model,
-        GlobalAveragePooling2D(),
-        Dense(2048, activation='relu'),
-        Dropout(0.5),
-        Dense(2048, activation='relu'),
-        Dropout(0.5),
+        layers.GlobalAveragePooling2D(),
+        layers.Dense(2048, activation='relu'),
+        layers.Dropout(0.5),
+        layers.Dense(2048, activation='relu'),
+        layers.Dropout(0.5),
         prediction,
         output
     ])
 
     # Compile the model
     model.compile(loss="sparse_categorical_crossentropy", # Use sparse_categorical_crossentropy when labels are *not* one-hot
-                optimizer=tf.keras.optimizers.Adam(hp.learning_rate),
+                optimizer=tf.keras.optimizers.Adam(),
                 metrics=["accuracy"])
     
     return model
@@ -135,12 +127,12 @@ def run_model(load_checkpoint):
     # Map preprocessing function to training data (and paralellize)
     train_data = train_data.map(map_func=preprocess_img, num_parallel_calls=tf.data.AUTOTUNE)
     # Shuffle train_data and turn it into batches and prefetch it (load it faster)
-    train_data = train_data.shuffle(hp.buffer_size).batch(hp.batch_size).prefetch(buffer_size=tf.data.AUTOTUNE)
+    train_data = train_data.shuffle(32).batch(32).prefetch(buffer_size=tf.data.AUTOTUNE)
 
     # Map prepreprocessing function to test data
     test_data = test_data.map(preprocess_img, num_parallel_calls=tf.data.AUTOTUNE)
     # Turn test data into batches (don't need to shuffle)
-    test_data = test_data.batch(hp.batch_size).prefetch(tf.data.AUTOTUNE)
+    test_data = test_data.batch(32).prefetch(tf.data.AUTOTUNE)
 
     ''' Broken experiments
     # Checkpoints

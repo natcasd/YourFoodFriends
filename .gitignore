@@ -1,4 +1,24 @@
-data/food5k
-fnf/*
-
+# Root
 *.out
+
+# Classifications
+classification/saved_models
+
+classification/checkpoints
+classification/finetune_checkpoints
+
+classification/logs
+classification/__pycache__
+
+classification/run_grid_gpu.sh.*
+classification/*.out
+
+# Data + FNF
+data/food5k
+fnf/checkpoints
+fnf/experiments
+fnf/logs
+
+# Segmentation
+segmentation/*.pth
+segmentation/__pycache__

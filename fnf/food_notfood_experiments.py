@@ -9,17 +9,13 @@ counter = 0
 def classify_list(images):
     global counter
     class_list = ['food', 'not_food']
-    
-    
-    fnf_model = tf.keras.models.load_model('fnf/checkpoints/050823-195400/models.hdf5')
-    # print('loaded model')
+        
+    fnf_model = tf.keras.models.load_model('checkpoints/050823-195400/models.hdf5')
     label_list = []
     max_list = []
-    # print('classlist:', classlist)
     
     for i in images:
         image = tf.image.resize(i, [256, 256])
-        # image = tf.keras.applications.mobilenet_v2.preprocess_input(image)
         image = tf.cast(image, tf.float32)
         image = tf.expand_dims(image,0)
         predictions = fnf_model.predict(image, verbose=0)
@@ -30,7 +26,7 @@ def classify_list(images):
         label_list.append(pred_label)
         plt.title('fnf predictions: ' + pred_label)
         plt.imshow(i)
-        save_path = f'fnf/experiments/{pred_label}/{counter}.jpg'
+        save_path = f'experiments/{pred_label}/{counter}.jpg'
         plt.savefig(save_path)
         counter += 1
 
