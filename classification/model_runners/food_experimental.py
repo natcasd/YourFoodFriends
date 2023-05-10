@@ -8,9 +8,10 @@ from keras.layers import \
 import argparse
 import pickle
 from keras import mixed_precision
-# import hyperparameters as hp
+import hyperparameters as hp
 import os
 from datetime import datetime
+import tensorflow_addons as tfa
 
 
 
@@ -20,39 +21,50 @@ mixed_precision.set_global_policy(policy="mixed_float16") # set global policy to
 mixed_precision.global_policy()
 
 def create_model():
+    
+    '''
+    # OLD METHOD
     # Create base model
-    # input_shape = (299, 299, 3)
-    # base_model = tf.keras.applications.Xception(include_top=False, weights='imagenet', input_shape=input_shape)
-    # base_model.trainable = False # freeze base model layers
-
-    # prediction = layers.Dense(num_classes, name='prediction')
-    # output = layers.Activation('softmax', dtype='float32', name='output')
-    # model = tf.keras.Sequential([
-    #     base_model,
-    #     GlobalAveragePooling2D(),
-    #     Dense(4096, activation='relu'),
-    #     Dropout(0.5),
-    #     # Dense(2048, activation='relu'),
-    #     # Dropout(0.5),
-    #     prediction,
-    #     output
-    # ])
-
     input_shape = (299, 299, 3)
-    base_model = tf.keras.applications.Xception(include_top=False)
+    base_model = tf.keras.applications.InceptionResNetV2(include_top=False, weights='imagenet', input_shape=input_shape)
+    base_model.trainable = False # freeze base model layers
+
+    prediction = layers.Dense(num_classes, name='prediction')
+    output = layers.Activation('softmax', dtype='float32', name='output')
+    model = tf.keras.Sequential([
+        base_model,
+        GlobalAveragePooling2D(),
+        Dense(2048, activation='relu'),
+        Dropout(0.5),
+        # Dense(2048, activation='relu'),
+        # Dropout(0.5),
+        prediction,
+        output
+    ])
+    '''
+
+    
+    input_shape = (299, 299, 3)
+    base_model = tf.keras.applications.InceptionResNetV2(include_top=False)
     base_model.trainable = False
 
     inputs = layers.Input(shape=input_shape, name='input_layer')
-    # x = layers.Rescaling(1./255, name='rescaling')(x)
     x = base_model(inputs, training=False)
+    
+    
+    # Default
     x = layers.GlobalAveragePooling2D(name='pooling_layer')(x)
+    x = layers.Dense(2048, name='Dense2048', activation='relu')(x)
+    x = layers.Dropout(0.5)(x)
     x = layers.Dense(101, name='logits')(x)
+
     outputs = layers.Activation('softmax', dtype=tf.float32, name='softmax_float32')(x)
     model = tf.keras.Model(inputs, outputs)
+    
 
     # Compile the model
     model.compile(loss="sparse_categorical_crossentropy", # Use sparse_categorical_crossentropy when labels are *not* one-hot
-                optimizer=tf.keras.optimizers.Adam(),
+                optimizer=tf.keras.optimizers.Adam(1e-4),
                 metrics=["accuracy"])
     
     return model
@@ -71,7 +83,7 @@ def run_model(load_checkpoint):
         [img_shape, img_shape, color_channels]
         """
         image = tf.image.resize(image, [299, 299]) # reshape to img_shape
-        image = tf.keras.applications.xception.preprocess_input(image) #xception required
+        image = tf.keras.applications.inception_resnet_v2.preprocess_input(image) #inception_resnet_v2 required
         return tf.cast(image, tf.float32), label # return (float32_image, label) tuple
 
     # Map preprocessing function to training data (and paralellize)
@@ -92,7 +104,7 @@ def run_model(load_checkpoint):
     checkpoint_path = f"checkpoints/{timestamp}/"
     if not os.path.exists(checkpoint_path):
         os.makedirs(checkpoint_path)
-    checkpoint_path += 'weights.hdf5'
+    checkpoint_path += 'models.hdf5'
     checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
                                                         monitor="val_accuracy", # save the model weights with best validation accuracy
                                                         save_best_only=True, # only save the best weights
@@ -113,6 +125,7 @@ def run_model(load_checkpoint):
 
     csv_logger_path = f"checkpoints/{timestamp}/epochs.csv"
     csv_logger_callback = tf.keras.callbacks.CSVLogger(csv_logger_path)
+    
 
     model.fit(
         train_data,
@@ -122,7 +135,7 @@ def run_model(load_checkpoint):
         verbose=2
     )
     
-    model_path = f"models/{timestamp}/model"
+    model_path = f"models/{timestamp}/model/"
     if not os.path.exists(model_path):
         os.makedirs(model_path)
     model.save(model_path)

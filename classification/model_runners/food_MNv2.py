@@ -21,24 +21,24 @@ mixed_precision.global_policy()
 
 def create_model():
     input_shape = (224, 224, 3)
-    base_model = tf.keras.applications.EfficientNetB3(include_top=False)
+    base_model = tf.keras.applications.MobileNetV2(include_top=False)
     base_model.trainable = False
 
     inputs = layers.Input(shape=input_shape, name='input_layer')
     x = base_model(inputs, training=False)
     
-    
+    '''
     # Default
     x = layers.GlobalAveragePooling2D(name='pooling_layer')(x)
     x = layers.Dense(101, name='logits')(x)
-    
-
     '''
+
+    
     x = layers.GlobalAveragePooling2D(name='pooling_layer')(x)
     x = layers.Dense(2048, name='Dense2048')(x)
-    x = layers.Dropout(0.5)(x)
+    # x = layers.Dropout(0.5)(x)
     x = layers.Dense(101, name='logits')(x)
-    '''
+    
     outputs = layers.Activation('softmax', dtype=tf.float32, name='softmax_float32')(x)
     model = tf.keras.Model(inputs, outputs)
 
@@ -64,7 +64,7 @@ def run_model(load_checkpoint):
         [img_shape, img_shape, color_channels]
         """
         image = tf.image.resize(image, [img_shape, img_shape]) # reshape to img_shape
-        # image = tf.keras.applications.efficientnet.preprocess_input(image) #not required
+        image = tf.keras.applications.mobilenet_v2.preprocess_input(image) #not required
         return tf.cast(image, tf.float32), label # return (float32_image, label) tuple
 
     # Map preprocessing function to training data (and paralellize)
@@ -109,7 +109,7 @@ def run_model(load_checkpoint):
 
     model.fit(
         train_data,
-        epochs = 6,
+        epochs = 10,
         steps_per_epoch=len(train_data),
         validation_data=test_data,
         validation_steps=int(0.15 * len(test_data)),

@@ -21,6 +21,7 @@ mixed_precision.global_policy()
 
 def create_model():
     
+    '''
     # OLD METHOD
     # Create base model
     input_shape = (299, 299, 3)
@@ -39,11 +40,11 @@ def create_model():
         prediction,
         output
     ])
-    
-
     '''
-    input_shape = (224, 224, 3)
-    base_model = tf.keras.applications.EfficientNetB3(include_top=False)
+
+    
+    input_shape = (299, 299, 3)
+    base_model = tf.keras.applications.InceptionResNetV2(include_top=False)
     base_model.trainable = False
 
     inputs = layers.Input(shape=input_shape, name='input_layer')
@@ -52,13 +53,13 @@ def create_model():
     
     # Default
     x = layers.GlobalAveragePooling2D(name='pooling_layer')(x)
-    x = layers.Dense(2048, name='Dense2048')(x)
+    x = layers.Dense(2048, name='Dense2048', activation='relu')(x)
     x = layers.Dropout(0.5)(x)
     x = layers.Dense(101, name='logits')(x)
 
     outputs = layers.Activation('softmax', dtype=tf.float32, name='softmax_float32')(x)
     model = tf.keras.Model(inputs, outputs)
-    '''
+    
 
     # Compile the model
     model.compile(loss="sparse_categorical_crossentropy", # Use sparse_categorical_crossentropy when labels are *not* one-hot
@@ -127,7 +128,7 @@ def run_model(load_checkpoint):
 
     model.fit(
         train_data,
-        epochs = 30,
+        epochs = 5,
         validation_data=test_data,
         callbacks = [checkpoint_callback, log_callback, csv_logger_callback],
         verbose=2

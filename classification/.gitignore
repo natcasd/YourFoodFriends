@@ -2,6 +2,7 @@ model_checkpoints
 saved_model
 simple_model
 models
+saved_models
 
 
 checkpoints
@@ -11,4 +12,4 @@ logs
 __pycache__
 
 run_grid_gpu.sh.*
-job_status.out
+*.out

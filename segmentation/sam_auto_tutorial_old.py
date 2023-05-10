@@ -19,10 +19,8 @@ from matplotlib import use as mpl_use
 mpl_use('TkAgg')
 '''
 
-def run_model(device='none', show_original='n', data='segmentation/images/food_tray.jpg', filter_method='big', show_bboxes_grid='n', show_masks='n', show_each='n'):
+def run_model(device='none', show_original='n', data='images/food_tray.jpg', filter_method='big', show_bboxes_grid='n', show_masks='n', show_each='n'):
     print("model running")
-    print(os.getcwd())
-    print('data:', data)
 
     def show_anns(anns):
         if len(anns) == 0:
@@ -55,7 +53,7 @@ def run_model(device='none', show_original='n', data='segmentation/images/food_t
     sys.path.append("..")
     
 
-    sam_checkpoint = "segmentation/sam_vit_h_4b8939.pth"
+    sam_checkpoint = "sam_vit_h_4b8939.pth"
     model_type = "vit_h"
 
     # device = torch.device("mps") # Apple M# Metal
@@ -87,24 +85,9 @@ def run_model(device='none', show_original='n', data='segmentation/images/food_t
         plt.show() 
 
     bounding_boxes = []
-    def get_bounding_box(mask, image1=image):
+    def get_bounding_box(mask):
         XYWH = mask['bbox']
-        return image1[XYWH[1]:XYWH[1]+XYWH[3], XYWH[0]:XYWH[0]+XYWH[2]]
-
-    def get_coordinates(mask):
-        XYWH = mask['bbox']
-        return [XYWH[1], XYWH[0], XYWH[3], XYWH[2]]
-    
-    def B2W(img):
-        black_pixels = np.where(
-                (img[:, :, 0] == 0) & 
-                (img[:, :, 1] == 0) & 
-                (img[:, :, 2] == 0)
-            )
-        img = img.numpy()
-        img[black_pixels] = [255,255,255]
-        img = tf.convert_to_tensor(img)
-        return img
+        return image[XYWH[1]:XYWH[1]+XYWH[3], XYWH[0]:XYWH[0]+XYWH[2]]
     
     print('creating bounding boxes')
     for mask in masks:
@@ -142,58 +125,11 @@ def run_model(device='none', show_original='n', data='segmentation/images/food_t
 
         np.savez_compressed('cropped_big_output', cropped_output)
 
-    elif(filter_method=='boundingboxes'):
-        big_filter = 20000
-        max_area = 100000
-        #filtered_big_masks = list(filter(lambda mask: (), masks))
-        #[print(mask['predicted_iou']) for mask in filtered_big_masks]
-        #[print(mask['stability_score']) for mask in filtered_big_masks]
-        big_masks = list(filter(lambda mask: mask['area'] > big_filter, masks))
-        predicted_masks = list(filter(lambda mask: mask['predicted_iou'] > 1.0, masks))
-        stable_masks = list(filter(lambda mask: mask['stability_score'] > 0.97, predicted_masks))
-        # stable_masks = list(filter(lambda mask: mask['area'] > big_filter, stable_masks))
-        big_boxes = []
-        cords = []
-        # for i in masks:
-        # for i in masks:
-        # for i in predicted_masks:
-        # for i in predicted_masks:
-        for i in stable_masks[1:6]:
-        # for i in masks:
-        # for i in stable_masks:
-            mask_image = i['segmentation'].astype(np.uint8) * 255
-            resultimage = cv2.bitwise_and(image, image, mask=mask_image)
-
-            # # Inverting B2W
-            # black_pixels = np.where(
-            #     (resultimage[:, :, 0] == 0) & 
-            #     (resultimage[:, :, 1] == 0) & 
-            #     (resultimage[:, :, 2] == 0)
-            # )
-            # resultimage[black_pixels] = [255,255,255]
-            # #
-
-            box = get_bounding_box(i, resultimage)
-            big_boxes.append(box)
-            cord = get_coordinates(i)
-            cords.append(cord)
-        big_boxes2 = [get_bounding_box(mask) for mask in masks[1:6]]
-
-        # WHITE PADDING
-        # cropped_output1 = np.array([B2W(tf.image.resize_with_crop_or_pad(box, 224, 224)) for box in big_boxes]) 
-        # cropped_output2 = np.array([B2W(tf.image.resize_with_crop_or_pad(box, 224, 224)) for box in big_boxes2])
-
-        # # BLACK PADDING
-        cropped_output1 = np.array([tf.image.resize_with_crop_or_pad(box, 224, 224) for box in big_boxes]) 
-        cropped_output2 = np.array([tf.image.resize_with_crop_or_pad(box, 224, 224) for box in big_boxes2])
-        return cropped_output1, cropped_output2, cords, data
-
     else:
         cropped_output = np.array([
             tf.image.resize_with_crop_or_pad(box, 224, 224) for box in bounding_boxes])
 
         np.savez_compressed('cropped_output', cropped_output)
-    return cropped_output
 
     if(show_bboxes_grid=='y'):
         num_imgs = len(cropped_output)
@@ -207,13 +143,15 @@ def run_model(device='none', show_original='n', data='segmentation/images/food_t
         )
         for ax, im in zip(grid, cropped_output): ax.imshow(im)
         plt.show()
+    
+    return cropped_output
         
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     parser.add_argument('-dev', '--device', choices=['none', 'mps', 'cuda'], 
-                        default='cuda', help='Either none, mps, cuda')
+                        default='none', help='Either none, mps, cuda')
     parser.add_argument('-so', '--show_original', choices=['y', 'n'], 
                         default='n',help='Show original image, [y] or n')
     parser.add_argument('-d', '--data', 

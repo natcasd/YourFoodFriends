@@ -17,6 +17,7 @@ export LD_LIBRARY_PATH=/users/wli115/anaconda/cs1430_env/lib:$LD_LIBRARY_PATH
 FILE=$1 
 shift
 
-python3 -u $FILE $@ > oscar$SLURM_JOB_ID.out 
+python3 -u $FILE $@
+# python3 -u $FILE $@ > oscar$SLURM_JOB_ID.out 
 
 # Command to run: sbatch [file_name]
