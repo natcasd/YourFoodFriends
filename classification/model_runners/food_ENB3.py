@@ -79,11 +79,11 @@ def create_model():
 # def run_model(load):
 def run_model(load_checkpoint):
     # Load and process data
-    (train_data, test_data), ds_info = tfds.load(name="food101", # target dataset to get from TFDS
-                                            split=["train", "validation"], # what splits of data should we get? note: not all datasets have train, valid, test
-                                            shuffle_files=True, # shuffle files on download?
-                                            as_supervised=True, # download data in tuple format (sample, label), e.g. (image, label)
-                                            with_info=True) # include dataset metadata? if so, tfds.load() returns tuple (data, ds_info)
+    (train_data, test_data), ds_info = tfds.load(name="food101", 
+                                            split=["train", "validation"], 
+                                            shuffle_files=True,
+                                            as_supervised=True,
+                                            with_info=True)
 
     # Preprocess training and test data
     train_data = train_data.map(map_func=preprocess_image, 
@@ -97,6 +97,10 @@ def run_model(load_checkpoint):
 
     # Create and compile the model
     model = create_model()
+
+    # Load weights if given in argument
+    if(load_checkpoint != 'n'):
+        model.load_weights(load_checkpoint)
 
     # Load callbacks
     processed_callbacks = process_callbacks(model)

@@ -3,11 +3,8 @@ import tensorflow_datasets as tfds
 from keras import layers, models
 import argparse
 from keras import mixed_precision
-import hyperparameters as hp
 import os
 from datetime import datetime
-
-
 
 num_classes = 101
 
@@ -85,9 +82,12 @@ def create_model():
 
 
 def run_model(load_checkpoint):
-    #########################
-    # LOAD AND PROCESS DATA
-    #########################
+    # Load and process data
+    (train_data, test_data), ds_info = tfds.load(name="food101", 
+                                            split=["train", "validation"], 
+                                            shuffle_files=True,
+                                            as_supervised=True,
+                                            with_info=True)
     # Preprocess training and test data
     train_data = train_data.map(map_func=preprocess_image, 
                                 num_parallel_calls=tf.data.AUTOTUNE)
@@ -100,6 +100,10 @@ def run_model(load_checkpoint):
 
     # Create and compile the model
     model = create_model()
+
+    # Load weights if given in argument
+    if(load_checkpoint != 'n'):
+        model.load_weights(load_checkpoint)
 
     # Load callbacks
     processed_callbacks = process_callbacks(model)

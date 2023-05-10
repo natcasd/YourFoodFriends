@@ -10,7 +10,7 @@ from datetime import datetime
 
 # from food_Xception import create_model
 # from food_ENB3 import create_model
-from model_runners.food_InceptionResNetV2 import create_model
+from classification.model_runners.food_IRNv2 import create_model
 # from food_MNv2 import create_model
 
 
