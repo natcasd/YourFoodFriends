@@ -1,23 +1,10 @@
-import os
-os.environ['KMP_DUPLICATE_LIB_OK']='True'
-
 import numpy as np
 import torch
-import matplotlib.pyplot as plt
 import cv2
 import argparse
 import sys
 import tensorflow as tf
-from segment_anything import sam_model_registry, SamAutomaticMaskGenerator, SamPredictor
-from mpl_toolkits.axes_grid1 import ImageGrid
-import math
-
-'''
-# plotting fix lol
-import tkinter
-from matplotlib import use as mpl_use
-mpl_use('TkAgg')
-'''
+from segment_anything import sam_model_registry, SamAutomaticMaskGenerator
 
 def run_model(device='none', data='segmentation/images/food_tray.jpg'):
     image = cv2.imread(data)
@@ -106,5 +93,3 @@ if __name__ == '__main__':
 
     run_model(device=args.device, 
               data=args.data)
-
-# python3 sam_auto_tutorial.py -d 'images/food_tray.jpg' -dev none -f none -sb y -sm y
