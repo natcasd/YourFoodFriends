@@ -8,3 +8,6 @@ Our poster is titled "Poster - YourFoodFriends.pdf"
 
 This is a link to our GitHub if that makes for easier viewing:
 https://github.com/jrbyers/YourFoodFriends
+
+This notebook was helpful for setting up our initial classifier training loop.
+https://dev.mrdbourke.com/tensorflow-deep-learning/07_food_vision_milestone_project_1/
